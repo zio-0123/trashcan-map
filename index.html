@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用者用 - ゴミ箱閲覧</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #location-status {
+            text-align: center;
+            margin: 10px 0;
+        }
+        #locate-me {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <h1 style="text-align: center;">ゴミ箱閲覧マップ</h1>
+    <div id="map"></div>
+    <p id="location-status"></p>
+    <button id="locate-me">現在地を表示</button>
+
+    <script>
+        var map = L.map('map').setView([35.6895, 139.6917], 13);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var currentLocationMarker = null;
+
+        var trashBins = JSON.parse(localStorage.getItem('trashBins')) || [];
+
+        trashBins.forEach(function(bin) {
+            L.marker([bin.lat, bin.lng]).addTo(map)
+                .bindPopup(bin.description);
+        });
+
+        document.getElementById('locate-me').addEventListener('click', function() {
+            var status = document.getElementById('location-status');
+            status.textContent = "現在地を取得中...";
+
+            if (!navigator.geolocation) {
+                status.textContent = "お使いのブラウザは現在地取得に対応していません。";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    if (currentLocationMarker) {
+                        map.removeLayer(currentLocationMarker);
+                    }
+
+                    currentLocationMarker = L.circleMarker([lat, lng], {
+                        color: 'red',
+                        radius: 6,
+                        fillOpacity: 0.8
+                    }).addTo(map).bindPopup("あなたの現在地").openPopup();
+
+                    map.setView([lat, lng], 15);
+                    status.textContent = "現在地を表示しました。";
+                },
+                function() {
+                    status.textContent = "現在地を取得できませんでした。";
+                }
+            );
+        });
+    </script>
+</body>
+</html>
